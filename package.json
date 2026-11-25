@@ -1,0 +1,14 @@
+{
+  "name": "bigooay-platform",
+  "private": true,
+  "workspaces": ["api", "worker", "web"],
+  "scripts": {
+    "start": "npm --workspace api start",
+    "dev": "npm --workspace api run dev",
+    "build": "npm --workspace web run build",
+    "worker": "npm --workspace worker start",
+    "compose:up": "docker compose up -d --build",
+    "compose:down": "docker compose down"
+  },
+  "engines": { "node": ">=22" }
+}

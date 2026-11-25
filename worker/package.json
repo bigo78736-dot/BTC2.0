@@ -1,0 +1,6 @@
+{
+  "name": "bigooay-worker",
+  "type": "module",
+  "scripts": { "start": "node src/worker.js" },
+  "dependencies": { "@google/genai": "latest", "pg": "latest", "ioredis": "latest" }
+}

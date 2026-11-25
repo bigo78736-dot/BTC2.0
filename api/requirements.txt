@@ -1,0 +1,10 @@
+express
+express-rate-limit
+helmet
+cors
+cookie-parser
+bcryptjs
+jsonwebtoken
+pg
+ioredis
+@google/genai

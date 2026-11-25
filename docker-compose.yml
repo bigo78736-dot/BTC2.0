@@ -4,30 +4,29 @@ services:
     environment:
       POSTGRES_DB: bigooay
       POSTGRES_USER: bigooay
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD in .env}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [postgres_data:/var/lib/postgresql/data]
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes: [redis_data:/data]
     restart: unless-stopped
 
   minio:
     image: minio/minio:latest
     command: server /data --console-address ':9001'
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
-    volumes:
-      - minio_data:/data
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+    volumes: [minio_data:/data]
     restart: unless-stopped
 
   livekit:
     image: livekit/livekit-server:latest
     command: --config /livekit.yaml
-    volumes:
-      - ./livekit.yaml:/livekit.yaml:ro
+    volumes: [./livekit.yaml:/livekit.yaml:ro]
     ports:
       - '7880:7880'
       - '7881:7881/tcp'
@@ -39,12 +38,26 @@ services:
   api:
     build: ./api
     environment:
-      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://bigooay:${POSTGRES_PASSWORD}@postgres:5432/bigooay
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_VIDEO_MODEL: ${GEMINI_VIDEO_MODEL:-veo-3.1-generate-001}
+      APP_ORIGIN: https://m.bigooay.tv
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+
+  worker:
+    build: ./worker
+    environment:
+      DATABASE_URL: postgresql://bigooay:${POSTGRES_PASSWORD}@postgres:5432/bigooay
+      REDIS_URL: redis://redis:6379
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_VIDEO_MODEL: ${GEMINI_VIDEO_MODEL:-veo-3.1-generate-001}
       VIDEO_OUTPUT_DIR: /data/videos
-    volumes:
-      - generated_videos:/data/videos
+    volumes: [generated_videos:/data/videos]
+    depends_on: [postgres, redis]
     restart: unless-stopped
 
   web:
@@ -53,21 +66,14 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api
-      - web
-      - livekit
+    ports: ['80:80','443:443']
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro,caddy_data:/data,caddy_config:/config]
+    depends_on: [api, web, livekit]
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
   minio_data:
   generated_videos:
   caddy_data:
