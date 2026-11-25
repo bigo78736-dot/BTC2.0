@@ -1,13 +1,6 @@
-portainer:
-  - https://m.bigooay.tv
-
-livekit.m.bigooay.tv {
-  reverse_proxy livekit:7880
-}
-
 m.bigooay.tv {
   encode gzip zstd
   reverse_proxy /api/* api:3000
   reverse_proxy /livekit/* livekit:7880
-  reverse_proxy web:3000
+  reverse_proxy web:80
 }
